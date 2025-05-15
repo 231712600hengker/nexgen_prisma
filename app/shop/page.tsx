@@ -7,18 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Eye } from 'lucide-react'
 import Link from 'next/link'
-
-interface Product {
-  id: string
-  name: string
-  description: string
-  price: number
-  category: string
-  image: string
-  stock: number
-  rating?: number
-  brand?: string
-}
+import { Product } from '@/lib/store'
 
 export default function Shop() {
   const [products, setProducts] = useState<Product[]>([])
@@ -43,7 +32,7 @@ export default function Shop() {
     fetchProducts()
   }, [])
 
-  const categories = ['all', ...new Set(products.map(product => product.category))]
+  const categories = ['all', ...Array.from(new Set(products.map(product => product.category)))]
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase()) ||

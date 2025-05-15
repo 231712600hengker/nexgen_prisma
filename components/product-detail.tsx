@@ -1,104 +1,106 @@
-"use client"
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAdminStore, type Product } from '@/lib/store'
-import { Button } from '@/components/ui/button'
-import { Star, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
-
-export default function ProductDetail({ productId }: { productId: string }) {
-  const router = useRouter()
-  const { products, isAuthenticated, userRole } = useAdminStore()
-  const [product, setProduct] = useState<Product | null>(null)
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/admin/login')
-    } else if (userRole === 'admin') {
-      router.push('/admin/dashboard')
-    } else {
-      const foundProduct = products.find(p => p.id === productId)
-      setProduct(foundProduct || null)
-    }
-  }, [isAuthenticated, userRole, router, products, productId])
-
-  if (!isAuthenticated || userRole === 'admin' || !product) {
-    return null
-  }
-
-  return (
-    <div className="min-h-screen bg-custom-base py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <Link href="/shop" className="inline-flex items-center text-custom-subtitle hover:text-custom-title mb-8">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Shop
-        </Link>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="relative aspect-square rounded-2xl overflow-hidden bg-custom-sub-base/50 backdrop-blur-sm border border-custom-title/20">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-            />
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-custom-title mb-2">{product.name}</h1>
-              <p className="text-custom-subtitle">{product.category}</p>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              {Array.from({ length: Math.floor(product.rating || 0) }).map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-custom-title text-custom-title" />
-              ))}
-              <span className="text-custom-subtitle">({product.rating})</span>
-            </div>
-
-            <div>
-              <p className="text-3xl font-bold text-custom-title">
-                Rp {product.price.toLocaleString('id-ID')}
-              </p>
-              <p className="text-custom-subtitle mt-2">
-                Stock: {product.stock} units available
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-xl font-semibold text-custom-title mb-2">Description</h2>
-              <p className="text-custom-subtitle">{product.description}</p>
-            </div>
-
-            {product.brand && (
-              <div>
-                <h2 className="text-xl font-semibold text-custom-title mb-2">Brand</h2>
-                <p className="text-custom-subtitle">{product.brand}</p>
-              </div>
-            )}
-
-            <Button size="lg" className="w-full">
-              Add to Cart
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="p-6 bg-custom-sub-base/50 rounded-2xl backdrop-blur-sm border border-custom-title/20">
-            <h3 className="text-lg font-semibold text-custom-title mb-3">Free Shipping</h3>
-            <p className="text-custom-subtitle">Free shipping on orders over Rp 1.000.000</p>
-          </div>
-          <div className="p-6 bg-custom-sub-base/50 rounded-2xl backdrop-blur-sm border border-custom-title/20">
-            <h3 className="text-lg font-semibold text-custom-title mb-3">Warranty</h3>
-            <p className="text-custom-subtitle">2 years manufacturer warranty included</p>
-          </div>
-          <div className="p-6 bg-custom-sub-base/50 rounded-2xl backdrop-blur-sm border border-custom-title/20">
-            <h3 className="text-lg font-semibold text-custom-title mb-3">Secure Payment</h3>
-            <p className="text-custom-subtitle">Multiple payment methods available</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+export interface Product {
+  id: string
+  name: string
+  description: string
+  price: number
+  category: string
+  image: string
+  stock: number
+  rating?: number
+  brand?: string
+  isNewArrival?: boolean
+  isTopSelling?: boolean
 }
+
+export interface Sale {
+  id: string
+  customer: string
+  product: string
+  amount: number
+  date: string
+  status: 'Pending' | 'Completed' | 'Cancelled'
+}
+
+export interface Payment {
+  id: string
+  amount: number
+  status: 'Pending' | 'Completed' | 'Failed'
+  method: string
+  date: string
+  saleId: string
+}
+
+interface AdminState {
+  isAuthenticated: boolean
+  userRole: 'admin' | 'user' | null
+  products: Product[]
+  sales: Sale[]
+  payments: Payment[]
+  
+  // Auth
+  login: (username: string, password: string) => boolean
+  logout: () => void
+}
+
+// Sample products data
+const sampleProducts: Product[] = [
+  {
+    id: '1',
+    name: 'Meta Quest 3',
+    description: 'Standalone VR headset with high-resolution display and precise motion tracking.',
+    price: 7500000,
+    category: 'Virtual Reality',
+    image: 'https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    stock: 50,
+    rating: 4.8,
+    brand: 'Meta',
+    isNewArrival: true,
+    isTopSelling: false
+  },
+  {
+    id: '2',
+    name: 'PlayStation VR2',
+    description: 'VR headset for PlayStation 5 with haptic feedback and adaptive triggers.',
+    price: 8500000,
+    category: 'Virtual Reality',
+    image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc07d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+    stock: 40,
+    rating: 4.7,
+    brand: 'Sony',
+    isNewArrival: true,
+    isTopSelling: false
+  }
+]
+
+export const useAdminStore = create<AdminState>()(
+  persist(
+    (set) => ({
+      isAuthenticated: false,
+      userRole: null,
+      products: sampleProducts,
+      sales: [],
+      payments: [],
+      
+      // Auth
+      login: (username: string, password: string) => {
+        if (username === 'admin123' && password === '12345') {
+          set({ isAuthenticated: true, userRole: 'admin' })
+          return true
+        }
+        else if (username === 'user123' && password === '12345') {
+          set({ isAuthenticated: true, userRole: 'user' })
+          return true
+        }
+        return false
+      },
+      logout: () => set({ isAuthenticated: false, userRole: null }),
+    }),
+    {
+      name: 'admin-storage',
+      storage: createJSONStorage(() => localStorage)
+    }
+  )
+)

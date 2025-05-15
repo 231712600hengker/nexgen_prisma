@@ -5,14 +5,29 @@ import { useRouter } from 'next/navigation'
 import { useAdminStore } from '@/lib/store'
 import AdminLayout from '@/components/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { LineChart, Line, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']
+
+interface SalesTrendData {
+  name: string
+  value: number
+}
+
+interface CategoryData {
+  name: string
+  value: number
+}
+
+interface AnalyticsData {
+  salesTrend: SalesTrendData[]
+  categoryData: CategoryData[]
+}
 
 export default function AdminAnalytics() {
   const { isAuthenticated, userRole } = useAdminStore()
   const router = useRouter()
-  const [analyticsData, setAnalyticsData] = useState({
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
     salesTrend: [],
     categoryData: []
   })
@@ -41,27 +56,27 @@ export default function AdminAnalytics() {
         ])
 
         // Process sales trend data
-        const salesByMonth = sales.reduce((acc: any, sale: any) => {
+        const salesByMonth = sales.reduce((acc: Record<string, number>, sale: any) => {
           const date = new Date(sale.date)
           const month = date.toLocaleString('default', { month: 'short' })
           acc[month] = (acc[month] || 0) + sale.amount
           return acc
         }, {})
 
-        const salesTrend = Object.entries(salesByMonth).map(([name, value]) => ({
+        const salesTrend: SalesTrendData[] = Object.entries(salesByMonth).map(([name, value]) => ({
           name,
-          value
+          value: Number(value)
         }))
 
         // Process category data
-        const categoryCount = products.reduce((acc: any, product: any) => {
+        const categoryCount = products.reduce((acc: Record<string, number>, product: any) => {
           acc[product.category] = (acc[product.category] || 0) + 1
           return acc
         }, {})
 
-        const categoryData = Object.entries(categoryCount).map(([name, value]) => ({
+        const categoryData: CategoryData[] = Object.entries(categoryCount).map(([name, value]) => ({
           name,
-          value
+          value: Number(value)
         }))
 
         setAnalyticsData({
@@ -121,7 +136,7 @@ export default function AdminAnalytics() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {analyticsData.categoryData.map((entry: any, index: number) => (
+                    {analyticsData.categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>

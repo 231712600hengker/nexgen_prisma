@@ -7,10 +7,18 @@ import AdminLayout from '@/components/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
+interface DashboardData {
+  totalSales: number
+  totalProducts: number
+  totalOrders: number
+  totalCustomers: number
+  salesData: Array<{ name: string; sales: number }>
+}
+
 export default function AdminDashboard() {
   const { isAuthenticated, userRole } = useAdminStore()
   const router = useRouter()
-  const [dashboardData, setDashboardData] = useState({
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
     totalSales: 0,
     totalProducts: 0,
     totalOrders: 0,
@@ -51,7 +59,7 @@ export default function AdminDashboard() {
         const uniqueCustomers = new Set(sales.map((sale: any) => sale.customer))
 
         // Group sales by month for chart
-        const salesByMonth = sales.reduce((acc: any, sale: any) => {
+        const salesByMonth = sales.reduce((acc: Record<string, number>, sale: any) => {
           const date = new Date(sale.date)
           const month = date.toLocaleString('default', { month: 'short' })
           acc[month] = (acc[month] || 0) + sale.amount
@@ -60,7 +68,7 @@ export default function AdminDashboard() {
 
         const chartData = Object.entries(salesByMonth).map(([name, sales]) => ({
           name,
-          sales
+          sales: Number(sales)
         }))
 
         setDashboardData({
